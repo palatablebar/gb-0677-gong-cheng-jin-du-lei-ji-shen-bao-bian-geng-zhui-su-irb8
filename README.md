@@ -20,10 +20,21 @@ docker compose exec -T app pytest -q
 - 5. 扣回核算：`/deductions`，`/api/deductions`。
 - 6. 进度对账：`/valuation`，`/api/valuation`。
 - 7. 签证归档：`/certificates`，`/api/certificates`。
+- 8. 暂估签认：`/provisional`，`/api/provisional`（量价分离工作台）。
 
 ## 核心规则
 
 累计申报必须减前期已审金额，变更按审批生效版本覆盖；负进度需关联冲回证据。
+
+新增钻孔等已完工但新增单价未批的工作，按**量价分离**裁决：已确认工程量按实签认避免跨月断档；价格依据缺失时 `payable_amount` 一律为 `0.00`，不生成付款金额；暂估价只折算 `held_amount`（暂缓金额）单列，禁止并入本期签证。后续批价以新版本追加付款，原申报快照与已确认量永不覆盖，同一工作量重试不重复确认，版本切换失败保留旧版并整体回滚。
+
+### 暂估签认接口
+
+- `GET /api/provisional`：工作台列表与汇总（签认项、待批价、已批价、暂缓金额合计、可付金额合计）。
+- `POST /api/provisional`：签认工程量。字段 `claim_id`、`period`(YYYY-MM)、`confirmed_qty` 必填，`provisional_price` 可空（仅用于暂缓金额），可传 `run_id` 链接既有批次定位原申报。首次 201，同载荷重试 200 幂等，同键不同载荷 409。
+- `GET /api/provisional/<claim_id%7Cperiod>`：签认明细及该工作的全部批价记录。
+- `POST /api/provisional/<key>/approval`：后续批价，需 `version`、`approved_price`、`approval_ref`；陈旧版本或重复批价返回 409，失败不改动原记录。
+- `GET /api/provisional-approvals`：批价与原申报快照的对应关系总表。
 
 ## 演示
 

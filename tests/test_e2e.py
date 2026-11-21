@@ -26,4 +26,7 @@ def test_module_entrances(client):
     for slug,name in MODULES:
         assert client.get("/api/"+slug).status_code==200
         assert client.get("/"+slug).status_code==200
+    assert client.get("/api/provisional").status_code==200
+    assert client.get("/provisional").status_code==200
+    assert client.get("/api/provisional-approvals").status_code==200
 def test_missing_run_404(client): assert client.get("/api/runs/missing").status_code==404

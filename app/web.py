@@ -1,7 +1,8 @@
 from flask import render_template
 from app.config import MODULES,TITLE,SHORT
 from app.pipeline import execute,load_sample
-from app import store
+from app import provisional_store, store
+from app.modules.m8_provisional import rules as provisional_rules
 def register_pages(app):
     def page(index):
         run=store.latest() or execute(load_sample("dirty.csv"))
@@ -14,3 +15,12 @@ def register_pages(app):
     app.add_url_rule("/",view_func=lambda:page(4))
     for index,(slug,name) in enumerate(MODULES):
         app.add_url_rule("/"+slug,endpoint="page_"+slug,view_func=lambda index=index:page(index))
+    def provisional_page():
+        confirmations=provisional_store.list_confirmations()
+        run=store.latest()
+        return render_template(
+            "provisional.html",title=TITLE,short=SHORT,modules=MODULES,index=None,
+            run=run,rows=confirmations,metrics=provisional_rules.summarize(confirmations),
+            approvals=provisional_store.list_approvals(),history=store.history(),
+        )
+    app.add_url_rule("/provisional",endpoint="page_provisional",view_func=provisional_page)

@@ -13,6 +13,7 @@
 | M5 扣回核算 | 查看并运行扣回核算 | `/api/deductions` | `app/modules/m5_deductions/rules.py` | `tests/test_m5.py` |
 | M6 进度对账 | 查看并运行进度对账 | `/api/valuation` | `app/modules/m6_valuation/rules.py` | `tests/test_m6.py` |
 | M7 签证归档 | 查看并运行签证归档 | `/api/certificates` | `app/modules/m7_certificates/rules.py` | `tests/test_m7.py` |
+| M8 暂估签认 | 已完未批价工作先认量暂缓金额，后续批价追加版本 | `/api/provisional` | `app/modules/m8_provisional/rules.py`、`app/provisional_store.py` | `tests/test_m8_provisional.py` |
 
 ## 陷阱登记
 
@@ -30,6 +31,10 @@
 | TRAP-07 | 累计量空值 | 按零冲回 | 隔离缺失 | `app/values.py` | `tests/test_m2.py::test_real_null_not_zero` |
 | TRAP-10 | 分币舍入 | 浮点误差 | 分项量化后净额守恒 | `app/modules/m5_deductions/rules.py` | `tests/test_m5.py::test_fraction_rounds_to_cent` |
 | TRAP-23 | 变更生效边界 | 旧价覆盖 | 按周期选择已批版本 | `app/modules/m3_changes/rules.py` | `tests/test_m3.py::test_effective_boundary` |
+| TRAP-27 | 暂估价并入签证 | 无价格依据也生成付款 | 量价分离：付款强制0.00，暂估仅计暂缓金额 | `app/modules/m8_provisional/rules.py` | `tests/test_m8_provisional.py::test_quantity_confirmed_but_no_payment_without_price_basis` |
+| TRAP-28 | 批价覆盖原申报 | 后写覆盖原始量价 | 原申报快照固化，批价只追加版本与审批记录 | `app/provisional_store.py` | `tests/test_m8_provisional.py::test_approval_persists_lineage_and_blocks_duplicate` |
+| TRAP-29 | 同工作量重复确认 | 重试产生第二条签认 | 业务键幂等：同载荷返回原记录，冲突409 | `app/provisional_store.py` | `tests/test_m8_provisional.py::test_retry_same_workload_is_idempotent_conflict_raises_409` |
+| TRAP-30 | 批价切换中途失败 | 半更新或旧版丢失 | 条件版本更新+事务，失败回滚保留V1 | `app/provisional_store.py` | `tests/test_m8_provisional.py::test_failed_switch_keeps_old_version_and_rolls_back` |
 
 ## 对账规则
 

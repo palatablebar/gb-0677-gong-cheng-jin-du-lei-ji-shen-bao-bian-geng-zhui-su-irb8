@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block heading %}暂估签认 · 量价分离工作台{% endblock %}
+{% block body %}
+<div class="grid">
+  <section class="panel">
+    <div class="receipt">
+      <div><div class="serial">PROVISIONAL / {{provisional_version}}</div><strong>本期工作量签认</strong></div>
+      <span class="serial">已确认量照签 · 无价格依据不付款</span>
+    </div>
+    <div class="panel__body inputs">
+      <input id="p-claim" placeholder="申报编号 claim_id" aria-label="申报编号">
+      <input id="p-period" placeholder="周期 YYYY-MM" aria-label="申报周期">
+      <input id="p-item" placeholder="清单项（可选）" aria-label="清单项">
+      <input id="p-qty" placeholder="已确认工程量" aria-label="已确认工程量" inputmode="decimal">
+      <input id="p-price" placeholder="暂估价（可选，仅计暂缓）" aria-label="暂估价" inputmode="decimal">
+      <input id="p-run" placeholder="来源批次 run_id（可选）" aria-label="来源批次" list="run-list">
+      <datalist id="run-list">{% for item in history %}<option value="{{item.run_id}}">{% endfor %}</datalist>
+      <button id="p-confirm" class="primary">确认工程量（付款暂缓）</button>
+      <span id="p-notice" role="status"></span>
+    </div>
+    <div class="table-scroll">
+      <table class="ledger">
+        <thead><tr>
+          <th>业务键</th><th>申报编号</th><th>周期</th><th>清单项</th><th>已确认量</th>
+          <th>暂估价</th><th>暂缓金额</th><th>批准单价</th><th>可付金额</th><th>状态</th>
+          <th>批价依据 / 版本</th><th>来源行</th>
+        </tr></thead>
+        <tbody id="provisional-rows">
+          {% for item in rows %}
+          <tr data-difference="{{'true' if item.status=='待批价' else 'false'}}">
+            <td title="{{item.business_key}}">{{item.business_key}}</td>
+            <td>{{item.claim_id}}</td><td>{{item.period}}</td><td>{{item.item or '—'}}</td>
+            <td>{{item.confirmed_qty}}</td>
+            <td>{{item.provisional_price or '—'}}</td>
+            <td>{{item.held_amount or '0.00'}}</td>
+            <td>{{item.approved_price or '—'}}</td>
+            <td>{{item.payable_amount}}</td><td>{{item.status}}</td>
+            <td>
+              {% if item.status=='待批价' %}
+              <div class="inputs">
+                <input class="a-price" data-key="{{item.business_key}}" placeholder="批准单价" aria-label="批准单价" inputmode="decimal">
+                <input class="a-ref" data-key="{{item.business_key}}" placeholder="批价文号" aria-label="批价文号">
+                <button class="a-submit" data-key="{{item.business_key}}" data-version="{{item.version}}">按批价入账</button>
+              </div>
+              {% else %}
+              {{item.approval_ref}} / V{{item.version}}
+              {% endif %}
+            </td>
+            <td>{{item.source_lines|join('/') if item.source_lines else '—'}}</td>
+          </tr>
+          {% else %}
+          <tr><td class="empty">暂无暂估签认；新增钻孔等已完未批价工作在此先认量、暂缓金额。</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="signature">
+      <span>已确认量 {{metrics.records}} 项</span>
+      <span>暂缓金额 {{metrics.held_total}} 元</span>
+      <span>可付金额 {{metrics.payable_total}} 元</span>
+    </div>
+  </section>
+  <div class="stack">
+    <section class="panel">
+      <div class="panel__head"><h2>裁决口径</h2><span>审计要求</span></div>
+      <div class="panel__body">
+        <div class="audit-line"><span>已确认量</span><b>按实签认，不跨月断档</b></div>
+        <div class="audit-line"><span>付款金额</span><b>价格依据缺失一律 0.00</b></div>
+        <div class="audit-line"><span>暂估价</span><b>只折算暂缓金额，不并入签证</b></div>
+        <div class="audit-line"><span>后续批价</span><b>追加新版本，原申报快照不覆盖</b></div>
+        <div class="audit-line"><span>重试</span><b>同一工作量不重复确认</b></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel__head"><h2>原申报与批价对应</h2><span>{{approvals|length}} 条批价</span></div>
+      <div class="panel__body">
+        {% for approval in approvals %}
+        <div class="reason">
+          <b>{{approval.business_key}} / {{approval.approval_ref}}</b>
+          <span>V{{approval.from_version}} → V{{approval.to_version}} ｜ 单价 {{approval.approved_price}} ｜ 入账 {{approval.payable_amount}} 元</span>
+          <span>原申报快照：{{approval.original_snapshot}}</span>
+        </div>
+        {% else %}
+        <div class="empty">尚无批价记录；批价后在此保留原申报与批价的对应关系。</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/provisional.js"></script>{% endblock %}

@@ -6,4 +6,7 @@ TITLE='工程进度累计申报与变更追溯'
 SHORT='progressclaim'
 COLUMNS=['claim_id', 'item', 'period', 'cumulative_qty', 'previous_qty', 'change_id', 'reversal', 'reported', 'note']
 MODULES=[('claims', '申报采信'), ('billitems', '清单映射'), ('changes', '变更定版'), ('increment', '累计还原'), ('deductions', '扣回核算'), ('valuation', '进度对账'), ('certificates', '签证归档')]
+EXTRA_NAV=[('provisional', '暂估签认')]
 RULE_VERSION="2026.11.17-r1"
+# 暂估签认（量价分离）规则版本独立编号，不改变既有七阶段批次的输入摘要
+PROVISIONAL_RULE_VERSION="2026.11.21-p1"

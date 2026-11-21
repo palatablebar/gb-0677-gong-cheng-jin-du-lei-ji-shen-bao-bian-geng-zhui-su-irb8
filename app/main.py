@@ -1,5 +1,5 @@
 from flask import Flask,jsonify,request,send_from_directory
-from app.config import ROOT,DATA_DIR,MODULES
+from app.config import ROOT,DATA_DIR,MODULES,EXTRA_NAV,PROVISIONAL_RULE_VERSION
 from app.errors import DomainError
 from app import pipeline,store
 from app.web import register_pages
@@ -7,6 +7,9 @@ import importlib
 def create_app():
     application=Flask(__name__,template_folder="templates",static_folder="static")
     application.config["MAX_CONTENT_LENGTH"]=4*1024*1024
+    @application.context_processor
+    def shared_context():
+        return {"extra_nav":EXTRA_NAV,"provisional_version":PROVISIONAL_RULE_VERSION}
     @application.errorhandler(DomainError)
     def domain_error(error): return jsonify({"code":error.code,"message":error.message}),error.status
     @application.errorhandler(KeyError)
@@ -48,6 +51,8 @@ def create_app():
     for index,(slug,title) in enumerate(MODULES,1):
         module=importlib.import_module(f"app.modules.m{index}_{slug}.handler")
         application.register_blueprint(module.bp)
+    from app.modules.m8_provisional.handler import bp as provisional_bp
+    application.register_blueprint(provisional_bp)
     register_pages(application)
     return application
 app=create_app()
